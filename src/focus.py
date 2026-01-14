@@ -1,7 +1,28 @@
 #!/usr/bin/env python3
 import  sys
+import  os
+from pathlib import Path
+
+def get_data_dir():
+    data_dir = os.getenv("FOCUS_DATA_DIR")
+
+    if not data_dir:
+        print("⚠️ FOCUS_DATA_DIR is not set.")
+        print("Example:")
+        print("  export FOCUS_DATA_DIR=~/GoogleDrive/focus")
+        sys.exit()
+
+    path = Path(data_dir).expanduser()
+
+    if not path.exists() or not path.is_dir():
+        print(f"⚠️ FOCUS_DATA_DIR points to an invalid directory:")
+        print(f"  {path}")
+        sys.exit(1)
+    return path
 
 def cmd_start():
+    data_dir = get_data_dir()
+    print(f"Using data directory : {data_dir}")
     print("Starting focus session WIP")
 
 def cmd_status():
