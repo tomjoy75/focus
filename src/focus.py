@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 import  sys
 import  os
-from pathlib import Path
+from    pathlib import Path
+import  datetime
 
 def get_data_dir():
     data_dir = os.getenv("FOCUS_DATA_DIR")
@@ -22,7 +23,13 @@ def get_data_dir():
 
 def cmd_start():
     data_dir = get_data_dir()
+    time = datetime.datetime.now()
+    filename = time.strftime("%Y-%m-%d.json")
     print(f"Using data directory : {data_dir}")
+    print(f"Name of the file     : {filename}")
+    with open(data_dir + "/" + filename) as f:
+
+
     print("Starting focus session WIP")
 
 def cmd_status():
