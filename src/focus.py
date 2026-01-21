@@ -3,6 +3,7 @@ import  sys
 import  os
 from    pathlib import Path
 import  datetime
+import  json
 
 def get_data_dir():
     data_dir = os.getenv("FOCUS_DATA_DIR")
@@ -22,13 +23,36 @@ def get_data_dir():
     return path
 
 def cmd_start():
+    # Se refaire un schema en pseudo code a avoir sous la main
+    # Diviser la fonction pour ne pas etre trop machine a gaz
     data_dir = get_data_dir()
     time = datetime.datetime.now()
     filename = time.strftime("%Y-%m-%d.json")
+    path = data_dir / filename
+
     print(f"Using data directory : {data_dir}")
     print(f"Name of the file     : {filename}")
-    with open(data_dir + "/" + filename) as f:
+    print(f"Path of the file     : {path}")
 
+    if path.is_file():
+        print(f"{path} exists")
+        with open(path, "r"):
+            data = json.loads(f.read())
+    else :
+        print(f"{path} do not exist")
+        data = {
+            "date": time.strftime("%Y-%m-%d"),
+            "sessions": []
+        }
+        print("Initialized empty daily state")
+
+    sessions = data["sessions"]
+    if len(sessions) != 0:
+        last = sessions[-1]
+        if "end" not in last:
+            print("⚠️ A focus session is already running.")
+            print("Use `focus status` to check it.")
+            sys.exit()
 
     print("Starting focus session WIP")
 
