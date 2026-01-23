@@ -36,8 +36,12 @@ def cmd_start():
 
     if path.is_file():
         print(f"{path} exists")
-        with open(path, "r"):
-            data = json.loads(f.read())
+        with open(path, "r") as f:
+            try :
+                data = json.loads(f.read())
+            except (ValueError, json.JSONDecodeError, UnicodeDecodeError) :
+                print(f"⚠️ Invalid session file format.\nPlease fix or delete the file:\t{path}")
+                return
     else :
         print(f"{path} do not exist")
         data = {
