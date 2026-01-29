@@ -65,3 +65,13 @@ fonction cmd_start()
     write data as JSON to path (create or overwrite file)
 
     exit silently
+
+
+fonction cmd_status()
+// Recupere le fichier date d'aujourd'hui
+//1/ Charger statut du jour
+//2/ Trouver la derniere session
+//3/ elapsed = now - start
+//4/ < duration_per_session -> "Not Yet. Stay focused"
+     >= duration_per_session -> "You can take a break"
+                                "Press enter to end the session"

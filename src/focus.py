@@ -2,10 +2,12 @@
 import  sys
 import  os
 from    pathlib import Path
-import  datetime
+from  datetime import datetime
+# from    datetime import date
 import  json
 
 def get_data_dir():
+    # Use env_variable FOCUs_DATA_DIR to get the path
     data_dir = os.getenv("FOCUS_DATA_DIR")
 
     if not data_dir:
@@ -63,8 +65,9 @@ def prompt_user() -> str:
 
 
 def start_session(intent, duration, path, data):
-    time = datetime.datetime.now()
-    start_time = time.strftime("%H:%M")
+    time = datetime.now()
+    start_time = time.isoformat()
+    # start_time = time.strftime("%H:%M")
     new_session = {
         "intent" : intent,
         "start" : start_time,
@@ -77,7 +80,7 @@ def start_session(intent, duration, path, data):
 def cmd_start():
     # Start a new session
     data_dir = get_data_dir()
-    time = datetime.datetime.now()
+    time = datetime.now()
     today_str = time.strftime("%Y-%m-%d")
     filename = time.strftime(f"{today_str}.json")
     path = data_dir / filename 
@@ -101,6 +104,43 @@ def cmd_start():
 
 def cmd_status():
     print("Checking focus session WIP")
+    data_dir = get_data_dir()
+    time = datetime.now()
+    filename = time.strftime("%Y-%m-%d.json")
+    path = data_dir / filename
+    print(f"DEBUG: path : {path}")
+    if path.is_file():
+        with open(path, "r") as f:
+            try :
+                data = json.loads(f.read())
+            except (ValueError, json.JSONDecodeError, UnicodeDecodeError) :
+                print(f"⚠️ Invalid session file format.\nPlease fix or delete the file:\t{path}")
+                return 1
+    else :
+        print("⚠️ No focus session is opened for today.")
+        print("Use `focus start` to start one.")
+        return 1
+    sessions = data["sessions"]
+    print(f"DEBUG: sessions : {sessions}")
+    if len(sessions) == 0:
+        print("⚠️ No session for today is already started.")
+        print("Use `focus start` to start one.")
+        return 1
+    last = sessions[-1]
+    if "end" in last:
+        print("⚠️ Last focus session is already finished.")
+        print("Use `focus start` to start a new one.")
+        return 1
+    time = datetime.now()
+    start_time = datetime.fromisoformat(last["start"])
+    print(f"actual time : {time}, start time : {start_time}")
+    print(f"actual time : {time}, start time : {start_time}, duration : {time - start_time}")
+    
+
+    return 0
+
+    
+
 
 def cmd_help():
     print("focus start  -> start a session")
@@ -117,7 +157,7 @@ def main():
         case "start":
             return cmd_start()
         case "status":
-            cmd_status()
+            return cmd_status()
         case "help" | "-h" :
             cmd_help()
             return 0
