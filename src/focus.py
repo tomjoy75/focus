@@ -127,17 +127,13 @@ def cmd_start():
 
     return 0
 
-def cmd_status():
+def check_file() -> dict:
     """
-    Check the status of today's focus session.
+    Return the data for today's session
 
-    - Reads today's file and reports whether a session is currently running.
-    - Checks also if the session duration his completed
-    - In case it's completed, it record an end key in the session dictionnary
-    - Raises an exception if
+    - Raises an exception if json is invalid or no focus session is opened
     """
 
-    print("Checking focus session WIP")
     data_dir = get_data_dir()
     time = datetime.now()
     filename = time.strftime("%Y-%m-%d.json")
@@ -148,27 +144,57 @@ def cmd_status():
             try :
                 data = json.loads(f.read())
             except (ValueError, json.JSONDecodeError, UnicodeDecodeError) :
-                print(f"⚠️ Invalid session file format.\nPlease fix or delete the file:\t{path}")
-                return 1
+                raise Exception(f"⚠️ Invalid session file format.\nPlease fix or delete the file:\t{path}")
     else :
-        print("⚠️ No focus session is opened for today.")
-        print("Use `focus start` to start one.")
-        return 1
+        raise Exception(
+            "⚠️ No focus session is opened for today.\n"
+            "Use `focus start` to start one.")
+    return data
+
+def check_sessions(data) -> list:
+    """
+    Return last session from the data
+    
+    - Raise an exception if no session started or last is already finished
+    """
+
     sessions = data["sessions"]
     print(f"DEBUG: sessions : {sessions}")
     if len(sessions) == 0:
-        print("⚠️ No session for today is already started.")
-        print("Use `focus start` to start one.")
-        return 1
+        raise Exception(
+            "⚠️ No session for today is already started.\n"
+            "Use `focus start` to start one.")
     last = sessions[-1]
     if "end" in last:
-        print("⚠️ Last focus session is already finished.")
-        print("Use `focus start` to start a new one.")
+        raise Exception(
+            "⚠️ Last focus session is already finished.\n"
+            "Use `focus start` to start a new one.")
+    return last
+
+def cmd_status():
+    """
+    Check the status of today's focus session.
+
+    - Reads today's file and reports whether a session is currently running.
+    - Checks also if the session duration his completed
+    - In case it's completed, it record an end key in the session dictionnary
+    - Raises an exception if
+    """
+
+    # Check file
+    try :
+        data = check_file()
+        last = check_sessions(data)
+    except Exception as e:
+        print(e)
         return 1
+    # Check sessions (started? last already finished)
+    # Check duration and orient the answer if it's less or more than planned_min_session
     time = datetime.now()
     start_time = datetime.fromisoformat(last["start"])
+    duration = datetime.now()- start_time 
     print(f"actual time : {time}, start time : {start_time}")
-    print(f"actual time : {time}, start time : {start_time}, duration : {time - start_time}")
+    print(f"actual time : {time}, start time : {start_time}, duration : {duration}")
 
     return 0
 
