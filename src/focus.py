@@ -11,15 +11,15 @@ def get_data_dir():
     data_dir = os.getenv("FOCUS_DATA_DIR")
 
     if not data_dir:
-        print("⚠️ FOCUS_DATA_DIR is not set.")
-        print("Example:")
-        print("  export FOCUS_DATA_DIR=~/GoogleDrive/focus")
-        return 1
+        raise Exception(
+            "⚠️ FOCUS_DATA_DIR is not set.\n"
+            "Example:\n"
+            "  export FOCUS_DATA_DIR=~/GoogleDrive/focus")
     path = Path(data_dir).expanduser()
     if not path.exists() or not path.is_dir():
-        print(f"⚠️ FOCUS_DATA_DIR points to an invalid directory:")
-        print(f"  {path}")
-        return 1
+        raise Exception(
+            "⚠️ FOCUS_DATA_DIR points to an invalid directory:\n"
+            f"  {path}")
     return path
 
 def init_data(path, today_str) -> dict | None :
@@ -29,8 +29,7 @@ def init_data(path, today_str) -> dict | None :
             try :
                 data = json.loads(f.read())
             except (ValueError, json.JSONDecodeError, UnicodeDecodeError) :
-                print(f"⚠️ Invalid session file format.\nPlease fix or delete the file:\t{path}")
-                return None
+                raise Exception(f"⚠️ Invalid session file format.\nPlease fix or delete the file:\t{path}")
     else :
         data = {
             "date": today_str,
@@ -43,14 +42,13 @@ def check_data(data) -> list | None:
     # Check if data is a list and end is present
     sessions = data["sessions"]
     if not isinstance(sessions, list):
-        print("⚠️ Invalid session file format.")
-        return None
+        raise Exception("⚠️ Invalid session file format.")
     if len(sessions) != 0:
         last = sessions[-1]
         if "end" not in last:
-            print("⚠️ A focus session is already running.")
-            print("Use `focus status` to check it.")
-            return None
+            raise Exception(
+                "⚠️ A focus session is already running.\n"
+                "Use `focus status` to check it.")
     return sessions
 
 def prompt_user() -> str:
@@ -67,7 +65,6 @@ def prompt_user() -> str:
 def start_session(intent, duration, path, data):
     time = datetime.now()
     start_time = time.isoformat()
-    # start_time = time.strftime("%H:%M")
     new_session = {
         "intent" : intent,
         "start" : start_time,
@@ -79,25 +76,24 @@ def start_session(intent, duration, path, data):
 
 def cmd_start():
     # Start a new session
-    data_dir = get_data_dir()
+    try:
+        data_dir = get_data_dir()
+    except Exception as e:
+        print(e)
+        return 1
     time = datetime.now()
     today_str = time.strftime("%Y-%m-%d")
     filename = time.strftime(f"{today_str}.json")
     path = data_dir / filename 
     print(f"Path of the file     : {path}")
-
-    data = init_data(path, today_str)
-    if data is None:
-        return 1
-
-    sessions = check_data(data)
-    if sessions is None:
+    try :
+        data = init_data(path, today_str)
+        sessions = check_data(data)
+    except Exception as e:
+        print(e)
         return 1
 
     intent = prompt_user()
-    if intent is None:
-        return 1
-
     start_session(intent, 25, path, data)
 
     return 0
