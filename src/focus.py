@@ -3,11 +3,16 @@ import  sys
 import  os
 from    pathlib import Path
 from  datetime import datetime
-# from    datetime import date
 import  json
 
 def get_data_dir():
-    # Use env_variable FOCUs_DATA_DIR to get the path
+    """
+    Return the directory used to store focus session data.
+
+    - The dir path is read from the FOCUS_DATA_DIR environment variable.
+    - Raises an exception if the variable is missing or invalid
+    """
+
     data_dir = os.getenv("FOCUS_DATA_DIR")
 
     if not data_dir:
@@ -22,8 +27,14 @@ def get_data_dir():
             f"  {path}")
     return path
 
-def init_data(path, today_str) -> dict | None :
-    # Initialise data
+def init_data(path, today_str) -> dict :
+    """
+    Return a json used to store all the elements of today's session  
+
+    - Open the json from today's file, or create a new one 
+    - Raises an exception if the json is not correctly extracted 
+    """
+    
     if path.is_file():
         with open(path, "r") as f:
             try :
@@ -38,8 +49,14 @@ def init_data(path, today_str) -> dict | None :
         print("Initialized empty daily state")
     return data
     
-def check_data(data) -> list | None:
-    # Check if data is a list and end is present
+def check_data(data) -> list :
+    """
+    Validate session data for a new start.
+
+    - Ensures the sessions list is valid and no session is already running.
+    - Raises an exception if the format is invalid or a session is active
+    """
+
     sessions = data["sessions"]
     if not isinstance(sessions, list):
         raise Exception("⚠️ Invalid session file format.")
@@ -52,6 +69,12 @@ def check_data(data) -> list | None:
     return sessions
 
 def prompt_user() -> str:
+    """
+    Ask the user for his intent for the next session.
+
+    - Repeats the prompt until a non-empty string is provided.
+    """
+    
     while True:
         print("🎯 What are you going to do now?")
         intent = input()
@@ -63,6 +86,12 @@ def prompt_user() -> str:
 
 
 def start_session(intent, duration, path, data):
+    """
+    Create and store a new focus session.
+
+    - Appends a session to the in-memory data and writes the JSON file.
+    """
+
     time = datetime.now()
     start_time = time.isoformat()
     new_session = {
@@ -75,30 +104,39 @@ def start_session(intent, duration, path, data):
         f.write(json.dumps(data, indent=4, ensure_ascii=False))
 
 def cmd_start():
-    # Start a new session
+    """
+    Start a new focus session from the CLI.
+
+    - Loads or initializes today's data, then prompts and writes a session.
+    """
+
     try:
         data_dir = get_data_dir()
-    except Exception as e:
-        print(e)
-        return 1
-    time = datetime.now()
-    today_str = time.strftime("%Y-%m-%d")
-    filename = time.strftime(f"{today_str}.json")
-    path = data_dir / filename 
-    print(f"Path of the file     : {path}")
-    try :
+        time = datetime.now()
+        today_str = time.strftime("%Y-%m-%d")
+        filename = time.strftime(f"{today_str}.json")
+        path = data_dir / filename 
+        print(f"Path of the file     : {path}")
         data = init_data(path, today_str)
         sessions = check_data(data)
     except Exception as e:
         print(e)
         return 1
-
     intent = prompt_user()
     start_session(intent, 25, path, data)
 
     return 0
 
 def cmd_status():
+    """
+    Check the status of today's focus session.
+
+    - Reads today's file and reports whether a session is currently running.
+    - Checks also if the session duration his completed
+    - In case it's completed, it record an end key in the session dictionnary
+    - Raises an exception if
+    """
+
     print("Checking focus session WIP")
     data_dir = get_data_dir()
     time = datetime.now()
@@ -131,19 +169,28 @@ def cmd_status():
     start_time = datetime.fromisoformat(last["start"])
     print(f"actual time : {time}, start time : {start_time}")
     print(f"actual time : {time}, start time : {start_time}, duration : {time - start_time}")
-    
 
     return 0
 
-    
-
-
 def cmd_help():
+    """
+    Print the CLI help message.
+
+    Lists available commands and their usage.
+    Does not raise any exception
+    """
+    
     print("focus start  -> start a session")
     print("focus status -> check if you can pause")
     print("focus help   -> show this help")
 
 def main():
+    """
+    Dispatch the CLI command.
+
+    Parses arguments and routes to the appropriate command handler.
+    """
+
     if len(sys.argv) < 2 :
         cmd_help()
         return
@@ -161,8 +208,6 @@ def main():
             print(f"unknown command : {cmd}")
             cmd_help()
             return 1
-
-    #print("focus CLI - work in progress")
 
 if __name__=="__main__":
     main()
