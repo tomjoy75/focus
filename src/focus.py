@@ -49,7 +49,7 @@ def init_data(path, today_str) -> dict :
         print("Initialized empty daily state")
     return data
     
-def check_data(data) -> list :
+def check_data(data) :
     """
     Validate session data for a new start.
 
@@ -66,7 +66,6 @@ def check_data(data) -> list :
             raise Exception(
                 "⚠️ A focus session is already running.\n"
                 "Use `focus status` to check it.")
-    return sessions
 
 def prompt_user() -> str:
     """
@@ -103,11 +102,11 @@ def start_session(intent, duration, path, data):
     with open(path, "w", encoding="utf-8") as f:
         f.write(json.dumps(data, indent=4, ensure_ascii=False))
 
-def cmd_start():
+def get_today_path():
     """
-    Start a new focus session from the CLI.
+    Return the path of today's file
 
-    - Loads or initializes today's data, then prompts and writes a session.
+    Raise an exception in case of errors
     """
 
     try:
@@ -116,9 +115,23 @@ def cmd_start():
         today_str = time.strftime("%Y-%m-%d")
         filename = time.strftime(f"{today_str}.json")
         path = data_dir / filename 
+    except Exception as e:
+        raise Exception(e)
+    return path, today_str
+
+
+def cmd_start():
+    """
+    Start a new focus session from the CLI.
+
+    - Loads or initializes today's data, then prompts and writes a session.
+    """
+
+    try:
+        path, today_str = get_today_path()
         print(f"Path of the file     : {path}")
         data = init_data(path, today_str)
-        sessions = check_data(data)
+        check_data(data)
     except Exception as e:
         print(e)
         return 1
@@ -134,11 +147,14 @@ def check_file() -> dict:
     - Raises an exception if json is invalid or no focus session is opened
     """
 
-    data_dir = get_data_dir()
-    time = datetime.now()
-    filename = time.strftime("%Y-%m-%d.json")
-    path = data_dir / filename
-    # print(f"DEBUG: path : {path}")
+    # data_dir = get_data_dir()
+    # time = datetime.now()
+    # filename = time.strftime("%Y-%m-%d.json")
+    # path = data_dir / filename
+    try:
+        path, _ = get_today_path()
+    except Exception() as e:
+        raise Exception(e)
     if path.is_file():
         with open(path, "r") as f:
             try :
@@ -159,7 +175,6 @@ def check_sessions(data) -> dict:
     """
 
     sessions = data["sessions"]
-    # print(f"DEBUG: sessions : {sessions}")
     if len(sessions) == 0:
         raise Exception(
             "⚠️ No session for today is already started.\n"
@@ -181,20 +196,15 @@ def cmd_status():
     - Raises an exception if
     """
 
-    # Check file
     try :
         data = check_file()
         last = check_sessions(data)
     except Exception as e:
         print(e)
         return 1
-    # Check sessions (started? last already finished)
-    # Check duration and orient the answer if it's less or more than planned_min_session
     time = datetime.now()
     start_time = datetime.fromisoformat(last["start"])
     duration = datetime.now()- start_time 
-    # print(f"actual time : {time}, start time : {start_time}")
-    # print(f"duration : {duration}, so in sec : {duration.total_seconds()}.s")
     if duration.total_seconds() < last["planned_min_duration"] * 60:
         print("Not Yet. Stay focused on current task\n"
             f"--- {last['intent']} ---")
@@ -206,20 +216,12 @@ def cmd_status():
         last["end"] = time.isoformat()
         print(data)
         try:
-            data_dir = get_data_dir()
-            time = datetime.now()
-            today_str = time.strftime("%Y-%m-%d")
-            filename = time.strftime(f"{today_str}.json")
-            path = data_dir / filename 
-            # print(f"Path of the file     : {path}")
-            # data = init_data(path, today_str)
-            # sessions = check_data(data)
+            path, _ = get_today_path()
         except Exception as e:
             print(e)
             return 1
         with open(path, "w", encoding="utf-8") as f:
             f.write(json.dumps(data, indent=4, ensure_ascii=False))
-
     return 0
 
 def cmd_help():
@@ -244,7 +246,6 @@ def main():
     if len(sys.argv) < 2 :
         cmd_help()
         return
-
     cmd = sys.argv[1]
     match(cmd):
         case "start":
