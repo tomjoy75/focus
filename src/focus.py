@@ -138,7 +138,7 @@ def check_file() -> dict:
     time = datetime.now()
     filename = time.strftime("%Y-%m-%d.json")
     path = data_dir / filename
-    print(f"DEBUG: path : {path}")
+    # print(f"DEBUG: path : {path}")
     if path.is_file():
         with open(path, "r") as f:
             try :
@@ -151,7 +151,7 @@ def check_file() -> dict:
             "Use `focus start` to start one.")
     return data
 
-def check_sessions(data) -> list:
+def check_sessions(data) -> dict:
     """
     Return last session from the data
     
@@ -159,7 +159,7 @@ def check_sessions(data) -> list:
     """
 
     sessions = data["sessions"]
-    print(f"DEBUG: sessions : {sessions}")
+    # print(f"DEBUG: sessions : {sessions}")
     if len(sessions) == 0:
         raise Exception(
             "⚠️ No session for today is already started.\n"
@@ -193,8 +193,32 @@ def cmd_status():
     time = datetime.now()
     start_time = datetime.fromisoformat(last["start"])
     duration = datetime.now()- start_time 
-    print(f"actual time : {time}, start time : {start_time}")
-    print(f"actual time : {time}, start time : {start_time}, duration : {duration}")
+    # print(f"actual time : {time}, start time : {start_time}")
+    # print(f"duration : {duration}, so in sec : {duration.total_seconds()}.s")
+    if duration.total_seconds() < last["planned_min_duration"] * 60:
+        print("Not Yet. Stay focused on current task\n"
+            f"--- {last['intent']} ---")
+    else :
+        print("You can take a break\n" 
+            "Press enter to end the session")
+        input()
+        time = datetime.now()
+        last["end"] = time.isoformat()
+        print(data)
+        try:
+            data_dir = get_data_dir()
+            time = datetime.now()
+            today_str = time.strftime("%Y-%m-%d")
+            filename = time.strftime(f"{today_str}.json")
+            path = data_dir / filename 
+            # print(f"Path of the file     : {path}")
+            # data = init_data(path, today_str)
+            # sessions = check_data(data)
+        except Exception as e:
+            print(e)
+            return 1
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(json.dumps(data, indent=4, ensure_ascii=False))
 
     return 0
 
