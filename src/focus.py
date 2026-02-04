@@ -109,14 +109,11 @@ def get_today_path():
     Raise an exception in case of errors
     """
 
-    try:
-        data_dir = get_data_dir()
-        time = datetime.now()
-        today_str = time.strftime("%Y-%m-%d")
-        filename = time.strftime(f"{today_str}.json")
-        path = data_dir / filename 
-    except Exception as e:
-        raise Exception(e)
+    data_dir = get_data_dir()
+    time = datetime.now()
+    today_str = time.strftime("%Y-%m-%d")
+    filename = time.strftime(f"{today_str}.json")
+    path = data_dir / filename 
     return path, today_str
 
 
@@ -147,14 +144,7 @@ def check_file() -> dict:
     - Raises an exception if json is invalid or no focus session is opened
     """
 
-    # data_dir = get_data_dir()
-    # time = datetime.now()
-    # filename = time.strftime("%Y-%m-%d.json")
-    # path = data_dir / filename
-    try:
-        path, _ = get_today_path()
-    except Exception() as e:
-        raise Exception(e)
+    path, _ = get_today_path()
     if path.is_file():
         with open(path, "r") as f:
             try :
@@ -186,6 +176,13 @@ def check_sessions(data) -> dict:
             "Use `focus start` to start a new one.")
     return last
 
+def close_session(last, data):
+    time = datetime.now()
+    last["end"] = time.isoformat()
+    path, _ = get_today_path()
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(json.dumps(data, indent=4, ensure_ascii=False))
+
 def cmd_status():
     """
     Check the status of today's focus session.
@@ -202,26 +199,23 @@ def cmd_status():
     except Exception as e:
         print(e)
         return 1
-    time = datetime.now()
     start_time = datetime.fromisoformat(last["start"])
     duration = datetime.now()- start_time 
     if duration.total_seconds() < last["planned_min_duration"] * 60:
-        print("Not Yet. Stay focused on current task\n"
+        print("❌ Not Yet. Stay focused on current task\n"
             f"--- {last['intent']} ---")
     else :
-        print("You can take a break\n" 
-            "Press enter to end the session")
-        input()
-        time = datetime.now()
-        last["end"] = time.isoformat()
-        print(data)
-        try:
-            path, _ = get_today_path()
-        except Exception as e:
-            print(e)
-            return 1
-        with open(path, "w", encoding="utf-8") as f:
-            f.write(json.dumps(data, indent=4, ensure_ascii=False))
+        print("✅ You can take a break\n" 
+            "End session? [Enter=yes / n=no]")
+        answer = input()
+        if answer == "n":
+            return 0
+        else :
+            try :
+                close_session(last, data)
+            except Exception as e:
+                print(e)
+                return 1
     return 0
 
 def cmd_help():
@@ -235,6 +229,7 @@ def cmd_help():
     print("focus start  -> start a session")
     print("focus status -> check if you can pause")
     print("focus help   -> show this help")
+    print("When you sit down, you stay until OK.")
 
 def main():
     """
@@ -261,4 +256,4 @@ def main():
             return 1
 
 if __name__=="__main__":
-    main()
+    sys.exit(main())
