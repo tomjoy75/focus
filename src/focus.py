@@ -44,6 +44,7 @@ def init_data(path, today_str) -> dict :
     else :
         data = {
             "date": today_str,
+            "planned_sessions": 4,
             "sessions": []
         }
         print("Initialized empty daily state")
