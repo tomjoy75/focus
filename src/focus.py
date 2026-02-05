@@ -77,7 +77,7 @@ def prompt_user() -> str:
     
     while True:
         print("🎯 What are you going to do now?")
-        intent = input()
+        intent = input("> ")
         if intent.strip() != "":
             break
         else:
@@ -177,9 +177,15 @@ def check_sessions(data) -> dict:
             "Use `focus start` to start a new one.")
     return last
 
-def close_session(last, data):
+def close_session(last, data, duration):
     time = datetime.now()
     last["end"] = time.isoformat()
+    last["actual_duration"] = (int)(duration.total_seconds() // 60)
+    valid = {"1": "smooth", "2": "difficult", "3": "unclear", "4": "boring"}
+    print("🧠 The session was:\n1) smooth\n2) difficult\n3) unclear\n4) boring")
+    while (feedback := input("> ").strip()) not in valid:
+        print("Your answer is not valid, please enter a valid answer.")
+    last["feedback"] = valid[feedback]
     path, _ = get_today_path()
     with open(path, "w", encoding="utf-8") as f:
         f.write(json.dumps(data, indent=4, ensure_ascii=False))
@@ -205,6 +211,7 @@ def cmd_status():
     if duration.total_seconds() < last["planned_min_duration"] * 60:
         print("❌ Not Yet. Stay focused on current task\n"
             f"--- {last['intent']} ---")
+        # print(f"DEBUG : {int(duration.total_seconds() // 60)} min")
     else :
         print("✅ You can take a break\n" 
             "End session? [Enter=yes / n=no]")
@@ -213,7 +220,7 @@ def cmd_status():
             return 0
         else :
             try :
-                close_session(last, data)
+                close_session(last, data, duration)
             except Exception as e:
                 print(e)
                 return 1
